@@ -55,9 +55,9 @@ const NoteModal = (props) => {
           <DateTimePicker
             label="Reminder Date and Time"
             defaultValue={dayjs(note?.reminder_date + 'Z')}
+            minDate={dayjs()}  /* Setting minimum date to current date */
             onChange={(newDate) => {
               console.log("date on change == ", newDate);
-              
               setCurrentNote({...note, reminder_date: newDate})
             }}
             renderInput={(params) => <TextField {...params} fullWidth variant="outlined" />}

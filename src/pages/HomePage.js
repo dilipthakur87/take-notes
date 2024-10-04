@@ -1,6 +1,6 @@
 // src/pages/HomePage.js
-import React, { useState } from 'react';
-import { Container, AppBar, Toolbar, Button, Typography } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Container, AppBar, Toolbar, Button, Typography, Alert } from '@mui/material';
 import { useCreateNoteMutation, useUpdateNoteMutation, useDeleteNoteMutation, useGetNoteMutation } from '../hooks/queries/useNoteQueries';
 import NoteModal from '../components/NoteModal';
 import NoteList from '../components/NoteList';
@@ -16,15 +16,42 @@ const HomePage = () => {
     reminder_date: ''
   });
 
-  // note mutations
-  const { data: notes, isLoading, error} = useGetNoteMutation()
+  const [createError, setCreateError] = useState(null);
+  const [updateError, setUpdateError] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
 
   // we can use the specific isLoadings to handle the specific async operations like showing spinner or anything as per necessity.
-  const { mutate: createNoteMutation, isLoading: createNoteLoading} = useCreateNoteMutation()
-  const { mutate: updateNoteMutation, isLoading: updateNoteLoading} = useUpdateNoteMutation()
-  const { mutate: deleteNoteMutation, isLoading: deleteNoteLoading} = useDeleteNoteMutation()
+  
+  // note mutations
+  const { data: notes, isLoading, error} = useGetNoteMutation()
+  
+  // Create Note Mutation
+  const { mutate: createNoteMutation, isLoading: createNoteLoading } = useCreateNoteMutation({
+    onError: (error) => {
+      console.log("error here == ", error);
+      
+      setCreateError(error?.response?.data?.error || 'Error creating note');
+    },
+  });
+
+  // Update Note Mutation
+  const { mutate: updateNoteMutation, isLoading: updateNoteLoading } = useUpdateNoteMutation({
+    onError: (error) => {
+      setUpdateError(error?.response?.data?.error || 'Error updating note');
+    },
+  });
+
+  // Delete Note Mutation
+  const { mutate: deleteNoteMutation, isLoading: deleteNoteLoading } = useDeleteNoteMutation({
+    onError: (error) => {
+      setDeleteError(error?.response?.data?.error || 'Error deleting note');
+    },
+  });
 
   const handleSaveNote = (note) => {
+    setCreateError(null);
+    setUpdateError(null);
+
     let formattedReminderDate = ''
     let noteToSave = {...note}
     console.log('note to save == ', noteToSave);
@@ -36,11 +63,6 @@ const HomePage = () => {
 
       noteToSave.reminder_date = formattedReminderDate
     }
-
-
-    console.log('note to save 2 == ', noteToSave);
-
-
 
     if (noteToSave.id) {
       // Update existing note
@@ -68,7 +90,11 @@ const HomePage = () => {
   }
 
   const handleDeleteNote = () => {
-    noteIdToDelete && deleteNoteMutation(noteIdToDelete);
+    setDeleteError(null);
+    if (noteIdToDelete) {
+      deleteNoteMutation(noteIdToDelete);
+      setIsConfirmationDialogOpen(false);
+    }
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -90,6 +116,11 @@ const HomePage = () => {
       </AppBar>
 
       <Container sx={{ marginTop: 4 }}>
+        {/* Display error alerts */}
+        {createError && <Alert severity="error">{createError}</Alert>}
+        {updateError && <Alert severity="error">{updateError}</Alert>}
+        {deleteError && <Alert severity="error">{deleteError}</Alert>}
+
         <NoteList notes={notes} onEdit={handleEditNote} onDelete={(noteId) => handleDeleteButton(noteId)} />
       </Container>
 
